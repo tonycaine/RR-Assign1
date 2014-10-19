@@ -4,22 +4,111 @@ output:
   html_document:
     keep_md: true
 ---
+Information about my environment. Have a 'minor issue' that knitr in rstudio does not use the same library path.
+
+Well i have a few hours before due date - it could be worse...
+
+```{r}
+ .libPaths()
+```
+To install the required libraries ran the following.
+```{r, cache=TRUE, echo=TRUE}
+#install.packages("lubridate")
+#install.packages("dplyr")
+#install.packages("ggplot2")
+#install.packages("gridExtra")
+```
+
+```{r echo=TRUE, message=FALSE}
+library(lubridate)
+library(dplyr)
+library(ggplot2)
+library(gridExtra)
+```
+### Loading and preprocessing the data
+
+First step is to read the data. This is a local copy of the data available at https://github.com/rdpeng/RepData_PeerAssessment1.
+
+Read in data using read.delim() which is same family as read.csv(). The data frame **df.activity** is used for the raw data. Later **df.activity.padded** will be used for the data where the NA's have been replaced.
 
 
-## Loading and preprocessing the data
+```{r}
+dir<-'C:/_store/@stats/data-course/3.-reproducable-research-Oct2014/assignment_1'
+setwd(dir)
+
+file<- paste(dir,'/activity.csv', sep='')
+df.activity<-read.delim(file, header = TRUE, sep = ",", quote = "\"", stringsAsFactors =FALSE)
+
+```
+
+For analysis i need to add some date and time information to this data frame
+```{r}
+
+# minor tweak with data to deal with date  #########################
+# inital date is a chr column
+colnames(df.activity)<-c('steps','datechr','interval')
+
+#to make a datetime column
+#nb. dates are strings in "yyyy-mm-dd"
+df.activity$date<-ymd(df.activity$datechr)
+
+###make a datetime column #################################
+
+df.activity$hhmm<-sprintf("%04d", df.activity$interval)
+df.activity$datetime<-paste(df.activity$datechr, df.activity$hhmm, ' ')
+df.activity$datetime<-ymd_hm(df.activity$datetime)
+
+#to get just the time during the day - will use decimal hours - in plots
+
+df.activity$time<- hour(df.activity$datetime)*60+minute(df.activity$datetime)
+#fractional hours
+df.activity$hrs<- hour(df.activity$datetime)+minute(df.activity$datetime)/60
+
+#a number of tasks require separation of weekday and weekend
+
+#determine if day is in the weekend or is a weekday
+#wday() returns the day of the week as a decimal number (01-07, Sunday is 1).
+df.activity$wday<-wday(df.activity$date)
+
+#setup the weekday/weekend factor as a column
+df.activity$weekend <- as.factor(
+  ifelse(df.activity$wday == 1 | df.activity$wday==7 , 'weekend', 'weekday')
+)
+
+## and summary info
+str(df.activity)
+summary(df.activity)
+
+```
+
+### What is mean total number of steps taken per day?
 
 
 
-## What is mean total number of steps taken per day?
+```{r}
+
+```
+
+### What is the average daily activity pattern?
 
 
+```{r}
 
-## What is the average daily activity pattern?
-
-
-
-## Imputing missing values
+```
 
 
+### Imputing missing values
 
-## Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+
+```
+
+
+### Are there differences in activity patterns between weekdays and weekends?
+
+
+```{r}
+
+```
+
