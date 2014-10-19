@@ -338,7 +338,7 @@ Do I need to save these manually??
 #Compare the raw and the padded data
 
 raw <-histo_mean_median ( df.activity, 'Histogram of steps taken per day for the 2 months')
-pad <-histo_mean_median ( df.activity.padded, 'Histogram  of padded data - see method - data essentially the same')
+pad <-histo_mean_median ( df.activity.padded, 'Histogram  of padded data - the NAs that were biasing the zeros - shifted')
 
 # histograms on a panel
 grid.arrange(raw$plot, pad$plot, ncol=1, nrow=2)
@@ -346,8 +346,10 @@ grid.arrange(raw$plot, pad$plot, ncol=1, nrow=2)
 
 ![](./PA1_template_files/figure-html/unnamed-chunk-9-1.png) 
 
+Mean per day increases when the NA's removed.
+
 ```r
-# the means and median
+# the means and median of the raw data
 raw$mean_median
 ```
 
@@ -359,6 +361,7 @@ raw$mean_median
 ```
 
 ```r
+# the means and median of the padded data
 pad$mean_median
 ```
 
@@ -369,16 +372,100 @@ pad$mean_median
 ## 1     10762.05          10571
 ```
 
+
 ### What is the average daily activity pattern?
 
 
+```r
+############################################################
+# plot activity for each 5 min interval for the month
 
+# Firstly get the average of the intervals
+interval_steps <- 
+  df.activity  %>%
+  group_by( hrs)  %>%
+  summarise(
+    interval = first(interval),
+    mean_steps = mean(steps, na.rm = TRUE)
+  )
 
+#plot the mean steps - use the hour as the x/base because to have treat as timeseries
+# if plot using the interval get gaps for times between end of hour and start of next. eg. 255 to 300
 
+ggplot(interval_steps , aes(x=hrs, y=mean_steps)) +
+  geom_line( colour='blue') + 
+  labs( title='Mean Steps Vs Time for each 5 min Interval' ,
+        x = 'time (as hour)',
+        y = 'steps') + 
+  theme(legend.position="none") +
+  scale_x_continuous(breaks=0:24)
+```
 
+![](./PA1_template_files/figure-html/unnamed-chunk-11-1.png) 
+The maximum mean number of step for an interval was about 206 steps at  8:35.
+
+```r
+############################################################
+#determine the interval with the max number of average steps
+
+interval_steps %>%
+  select( interval, mean_steps) %>% 
+  filter( mean_steps == max(mean_steps))
+```
+
+```
+## Source: local data frame [1 x 2]
+## 
+##   interval mean_steps
+## 1      835   206.1698
+```
+
+```r
+############################################################
+```
 
 ### Are there differences in activity patterns between weekdays and weekends?
+Another function was used to generate comparison plots of the raw and the padded data. Each plot has the mean steps for that interval taking into account the weekday or weekend nature of the data. 
 
 
+```r
+############################################################
+# Plot the weekday and the weekend interval averages
+# Doing this for both the raw and the 'padded' data - so use a function that returns the plot
 
+plot_weekday_weekend <- function (df, title) {
+  interval_steps <- 
+    df %>%
+    group_by( hrs, weekend)  %>%
+    summarise(
+      interval = first(interval),
+      mean_steps = mean(steps, na.rm = TRUE)
+    )
+  p<-ggplot(interval_steps , aes(x=hrs, y=mean_steps, group=weekend, colour=weekend)) +
+    geom_line() + 
+    labs( title=title,
+          x = 'interval (as hour)',
+          y = 'steps') + 
+    scale_x_continuous(breaks=0:24)+
+    scale_y_continuous(breaks=seq(from=0, to=250, by=25))
+  ret <- list("plot" = p)
+  ret
+}
+```
+
+There is a clear difference between the weekdays and the weekend for this individual.
+
+
+```r
+raw<- plot_weekday_weekend ( df.activity, 'Mean Steps Vs Time for each 5 min Interval grouped on Weekdays Vs Weekends')
+pad<- plot_weekday_weekend ( df.activity.padded, 'Padded data - essentally the same because padded with the mean')
+
+# Plot the weekday and the weekend interval averages on a panel
+# this arranegment allows comparison of the weekend/weekday and the effect of the padding
+
+#display results
+grid.arrange(raw$plot, pad$plot, ncol=1, nrow=2)
+```
+
+![](./PA1_template_files/figure-html/unnamed-chunk-14-1.png) 
 
