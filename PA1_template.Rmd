@@ -80,12 +80,136 @@ str(df.activity)
 summary(df.activity)
 
 ```
+### Imputing missing values.
+
+the NA values are replaced by the following algorith.
+
+1. calculating the mean of the interval across the 2 months taking into account the weekend as a factor. 
+2. these are joined into the df.activity dataframe so that available as a 'mean_steps'.
+3. where the row has a steps of NA using the mean_steps is used to replace the NA
+
+This analysis, using dplyr, is done here, early so that the following plots can compare the raw and padded data.
+
+An insight had during experimentation was that this replacment does shift the histogram as there are less zero activity days but does not shift the mean activity - as just added back the mean activity.
+
+```{r }
+
+############################################################
+### clean up data by replacing the steps=NA with the mean number of steps taken in that interval.
+### as the weekend and weekday will influence this mean
+### use mean of weekday interval and mean of weekend interval
+
+### firstly get the interval_mean_steps_w where there are means for 
+# weekdays and weekend intervals
+
+interval_steps_ww <- 
+  df.activity  %>%
+  group_by( weekend, interval)  %>%
+  summarise(
+    mean_steps = mean(steps, na.rm = TRUE)
+  )
+
+# add on a joining column 'interval_weekend' so that dplyr join() can be used (see below)
+interval_steps_ww <- 
+  interval_steps_ww  %>%
+  mutate ( interval_weekend = paste (weekend,interval))
+
+# add that same column to the df.activity dataframe 
+ 
+df.activity<-
+df.activity %>%
+  mutate ( interval_weekend = paste (weekend,interval))
+
+# join the dataframes back to df.activity so have mean_steps available if steps is NA
+# this bvings the intervals mean in so that it can be used to replace the NA where appropriate
+df.activity<-left_join(df.activity, interval_steps_ww, by=c("interval_weekend")) 
+
+#clean up from the join 
+df.activity <-
+  df.activity %>%
+  select( steps, datechr, interval=interval.x, date, hhmm, datetime, time, hrs, wday, weekend=weekend.x, mean_steps)
+  
+#create another dataframe replacing all the NA's with the interval mean of the weekday or weekend 
+# df.activity.padded has the NA replaced otherwise the same as df.activity
+
+df.activity.padded<- 
+  df.activity %>%
+  mutate(
+    steps =
+      ifelse(
+        is.na( steps), 
+        mean_steps, #an alternative that does make a visible difference is to set the NA to zero 
+        steps
+      )
+  )
+```
+
+```{r}
+## and summary info
+str(df.activity)
+summary(df.activity)
+
+str(df.activity.padded)
+summary(df.activity.padded)
+
+```
+
+```
 
 ### What is mean total number of steps taken per day?
 
-
+Use a function histo_mean_median() to generate a list containing the plot and the mean and median.
+It will later be called for both the raw and padded data.
 
 ```{r}
+# require a histogram of the steps per day and mean and median
+# need this twice for different data so do it in a function
+
+histo_mean_median <- function (df, title) {
+  # get the steps per day
+  df.perday <- 
+    df %>%
+    group_by( date)  %>%
+    summarise(
+      steps_per_day = sum(steps, na.rm = TRUE)
+    )
+  #plot it as a histogram - force scales to be same for comparison
+  p<-ggplot(df.perday, aes(x=steps_per_day)) +
+          geom_histogram(binwidth = 250) + 
+          labs( title=title ,
+                x = 'steps per day',
+                y = 'number of days')+
+          xlim(0,25000) +
+          scale_y_continuous(breaks=0:10)
+  # what where the mean and medium of step per day
+  mean_median <- df.perday  %>%
+    summarise(
+      mean_per_day   = mean(steps_per_day, na.rm = TRUE),
+      medium_per_day = median(steps_per_day, na.rm = TRUE)
+    )
+  #return the plot and the mean and median
+  ret <- list("plot" = p, "mean_median" = mean_median)
+  ret
+}
+
+```
+
+Generate the plots.
+Do I need to save these manually??
+
+```{r}
+####################################################
+#Compare the raw and the padded data
+
+raw <-histo_mean_median ( df.activity, 'Histogram of steps taken per day for the 2 months')
+pad <-histo_mean_median ( df.activity.padded, 'Histogram  of padded data - see method - data essentially the same')
+
+# histograms on a panel
+grid.arrange(raw$plot, pad$plot, ncol=1, nrow=2)
+
+# the means and median
+raw$mean_median
+pad$mean_median
 
 ```
 
@@ -97,12 +221,6 @@ summary(df.activity)
 ```
 
 
-### Imputing missing values
-
-
-```{r}
-
-```
 
 
 ### Are there differences in activity patterns between weekdays and weekends?
