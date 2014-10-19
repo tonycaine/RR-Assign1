@@ -55,7 +55,7 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 </div>
 
 
-<p>Information about my environment. Have a ‘minor issue’ that knitr in rstudio does not use the same library path.</p>
+<p>Information about my environment. Have a ‘minor issue’ that knitr in rstudio does not use the same library path and so will not run the Rmd script.</p>
 <p>Well i have a few hours before due date - it could be worse…</p>
 <pre class="r"><code> .libPaths()</code></pre>
 <pre><code>## [1] &quot;C:/Users/tcaine/R/win-library/3.1&quot; 
@@ -69,8 +69,8 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 library(dplyr)
 library(ggplot2)
 library(gridExtra)</code></pre>
-<div id="loading-and-preprocessing-the-data" class="section level2">
-<h2>Loading and preprocessing the data</h2>
+<div id="loading-and-preprocessing-the-data" class="section level3">
+<h3>Loading and preprocessing the data</h3>
 <p>First step is to read the data. This is a local copy of the data available at <a href="https://github.com/rdpeng/RepData_PeerAssessment1">https://github.com/rdpeng/RepData_PeerAssessment1</a>.</p>
 <p>Read in data using read.delim() which is same family as read.csv(). The data frame <strong>df.activity</strong> is used for the raw data. Later <strong>df.activity.padded</strong> will be used for the data where the NA’s have been replaced.</p>
 <pre class="r"><code>dir&lt;-'C:/_store/@stats/data-course/3.-reproducable-research-Oct2014/assignment_1'
@@ -149,17 +149,199 @@ str(df.activity)</code></pre>
 ##  Max.   :23.917   Max.   :7                  
 ## </code></pre>
 </div>
-<div id="what-is-mean-total-number-of-steps-taken-per-day" class="section level2">
-<h2>What is mean total number of steps taken per day?</h2>
+<div id="imputing-missing-values." class="section level3">
+<h3>Imputing missing values.</h3>
+<p>the NA values are replaced by the following algorith.</p>
+<ol style="list-style-type: decimal">
+<li>calculating the mean of the interval across the 2 months taking into account the weekend as a factor.</li>
+<li>these are joined into the df.activity dataframe so that available as a ‘mean_steps’.</li>
+<li>where the row has a steps of NA using the mean_steps is used to replace the NA</li>
+</ol>
+<p>This analysis, using dplyr, is done here, early so that the following plots can compare the raw and padded data.</p>
+<p>An insight had during experimentation was that this replacment does shift the histogram as there are less zero activity days but does not shift the mean activity - as just added back the mean activity.</p>
+<pre class="r"><code>############################################################
+### clean up data by replacing the steps=NA with the mean number of steps taken in that interval.
+### as the weekend and weekday will influence this mean
+### use mean of weekday interval and mean of weekend interval
+
+### firstly get the interval_mean_steps_w where there are means for 
+# weekdays and weekend intervals
+
+interval_steps_ww &lt;- 
+  df.activity  %&gt;%
+  group_by( weekend, interval)  %&gt;%
+  summarise(
+    mean_steps = mean(steps, na.rm = TRUE)
+  )
+
+# add on a joining column 'interval_weekend' so that dplyr join() can be used (see below)
+interval_steps_ww &lt;- 
+  interval_steps_ww  %&gt;%
+  mutate ( interval_weekend = paste (weekend,interval))
+
+# add that same column to the df.activity dataframe 
+ 
+df.activity&lt;-
+df.activity %&gt;%
+  mutate ( interval_weekend = paste (weekend,interval))
+
+# join the dataframes back to df.activity so have mean_steps available if steps is NA
+# this bvings the intervals mean in so that it can be used to replace the NA where appropriate
+df.activity&lt;-left_join(df.activity, interval_steps_ww, by=c(&quot;interval_weekend&quot;)) 
+
+#clean up from the join 
+df.activity &lt;-
+  df.activity %&gt;%
+  select( steps, datechr, interval=interval.x, date, hhmm, datetime, time, hrs, wday, weekend=weekend.x, mean_steps)
+  
+#create another dataframe replacing all the NA's with the interval mean of the weekday or weekend 
+# df.activity.padded has the NA replaced otherwise the same as df.activity
+
+df.activity.padded&lt;- 
+  df.activity %&gt;%
+  mutate(
+    steps =
+      ifelse(
+        is.na( steps), 
+        mean_steps, #an alternative that does make a visible difference is to set the NA to zero 
+        steps
+      )
+  )</code></pre>
+<pre class="r"><code>## and summary info
+str(df.activity)</code></pre>
+<pre><code>## 'data.frame':    17568 obs. of  11 variables:
+##  $ steps     : int  NA NA NA NA NA NA NA NA NA NA ...
+##  $ datechr   : chr  &quot;2012-10-01&quot; &quot;2012-10-01&quot; &quot;2012-10-01&quot; &quot;2012-10-01&quot; ...
+##  $ interval  : int  0 5 10 15 20 25 30 35 40 45 ...
+##  $ date      : POSIXct, format: &quot;2012-10-01&quot; &quot;2012-10-01&quot; ...
+##  $ hhmm      : chr  &quot;0000&quot; &quot;0005&quot; &quot;0010&quot; &quot;0015&quot; ...
+##  $ datetime  : POSIXct, format: &quot;2012-10-01 00:00:00&quot; &quot;2012-10-01 00:05:00&quot; ...
+##  $ time      : num  0 5 10 15 20 25 30 35 40 45 ...
+##  $ hrs       : num  0 0.0833 0.1667 0.25 0.3333 ...
+##  $ wday      : num  2 2 2 2 2 2 2 2 2 2 ...
+##  $ weekend   : Factor w/ 2 levels &quot;weekday&quot;,&quot;weekend&quot;: 1 1 1 1 1 1 1 1 1 1 ...
+##  $ mean_steps: num  2.333 0.462 0.179 0.205 0.103 ...</code></pre>
+<pre class="r"><code>summary(df.activity)</code></pre>
+<pre><code>##      steps          datechr             interval           date           
+##  Min.   :  0.00   Length:17568       Min.   :   0.0   Min.   :2012-10-01  
+##  1st Qu.:  0.00   Class :character   1st Qu.: 588.8   1st Qu.:2012-10-16  
+##  Median :  0.00   Mode  :character   Median :1177.5   Median :2012-10-31  
+##  Mean   : 37.38                      Mean   :1177.5   Mean   :2012-10-31  
+##  3rd Qu.: 12.00                      3rd Qu.:1766.2   3rd Qu.:2012-11-15  
+##  Max.   :806.00                      Max.   :2355.0   Max.   :2012-11-30  
+##  NA's   :2304                                                             
+##      hhmm              datetime                        time       
+##  Length:17568       Min.   :2012-10-01 00:00:00   Min.   :   0.0  
+##  Class :character   1st Qu.:2012-10-16 05:58:45   1st Qu.: 358.8  
+##  Mode  :character   Median :2012-10-31 11:57:30   Median : 717.5  
+##                     Mean   :2012-10-31 11:57:30   Mean   : 717.5  
+##                     3rd Qu.:2012-11-15 17:56:15   3rd Qu.:1076.2  
+##                     Max.   :2012-11-30 23:55:00   Max.   :1435.0  
+##                                                                   
+##       hrs              wday      weekend        mean_steps     
+##  Min.   : 0.000   Min.   :1   weekday:12960   Min.   :  0.000  
+##  1st Qu.: 5.979   1st Qu.:2   weekend: 4608   1st Qu.:  2.103  
+##  Median :11.958   Median :4                   Median : 24.769  
+##  Mean   :11.958   Mean   :4                   Mean   : 37.368  
+##  3rd Qu.:17.938   3rd Qu.:6                   3rd Qu.: 57.333  
+##  Max.   :23.917   Max.   :7                   Max.   :234.103  
+## </code></pre>
+<pre class="r"><code>str(df.activity.padded)</code></pre>
+<pre><code>## 'data.frame':    17568 obs. of  11 variables:
+##  $ steps     : num  2.333 0.462 0.179 0.205 0.103 ...
+##  $ datechr   : chr  &quot;2012-10-01&quot; &quot;2012-10-01&quot; &quot;2012-10-01&quot; &quot;2012-10-01&quot; ...
+##  $ interval  : int  0 5 10 15 20 25 30 35 40 45 ...
+##  $ date      : POSIXct, format: &quot;2012-10-01&quot; &quot;2012-10-01&quot; ...
+##  $ hhmm      : chr  &quot;0000&quot; &quot;0005&quot; &quot;0010&quot; &quot;0015&quot; ...
+##  $ datetime  : POSIXct, format: &quot;2012-10-01 00:00:00&quot; &quot;2012-10-01 00:05:00&quot; ...
+##  $ time      : num  0 5 10 15 20 25 30 35 40 45 ...
+##  $ hrs       : num  0 0.0833 0.1667 0.25 0.3333 ...
+##  $ wday      : num  2 2 2 2 2 2 2 2 2 2 ...
+##  $ weekend   : Factor w/ 2 levels &quot;weekday&quot;,&quot;weekend&quot;: 1 1 1 1 1 1 1 1 1 1 ...
+##  $ mean_steps: num  2.333 0.462 0.179 0.205 0.103 ...</code></pre>
+<pre class="r"><code>summary(df.activity.padded)</code></pre>
+<pre><code>##      steps          datechr             interval           date           
+##  Min.   :  0.00   Length:17568       Min.   :   0.0   Min.   :2012-10-01  
+##  1st Qu.:  0.00   Class :character   1st Qu.: 588.8   1st Qu.:2012-10-16  
+##  Median :  0.00   Mode  :character   Median :1177.5   Median :2012-10-31  
+##  Mean   : 37.37                      Mean   :1177.5   Mean   :2012-10-31  
+##  3rd Qu.: 24.00                      3rd Qu.:1766.2   3rd Qu.:2012-11-15  
+##  Max.   :806.00                      Max.   :2355.0   Max.   :2012-11-30  
+##      hhmm              datetime                        time       
+##  Length:17568       Min.   :2012-10-01 00:00:00   Min.   :   0.0  
+##  Class :character   1st Qu.:2012-10-16 05:58:45   1st Qu.: 358.8  
+##  Mode  :character   Median :2012-10-31 11:57:30   Median : 717.5  
+##                     Mean   :2012-10-31 11:57:30   Mean   : 717.5  
+##                     3rd Qu.:2012-11-15 17:56:15   3rd Qu.:1076.2  
+##                     Max.   :2012-11-30 23:55:00   Max.   :1435.0  
+##       hrs              wday      weekend        mean_steps     
+##  Min.   : 0.000   Min.   :1   weekday:12960   Min.   :  0.000  
+##  1st Qu.: 5.979   1st Qu.:2   weekend: 4608   1st Qu.:  2.103  
+##  Median :11.958   Median :4                   Median : 24.769  
+##  Mean   :11.958   Mean   :4                   Mean   : 37.368  
+##  3rd Qu.:17.938   3rd Qu.:6                   3rd Qu.: 57.333  
+##  Max.   :23.917   Max.   :7                   Max.   :234.103</code></pre>
+<p>```</p>
 </div>
-<div id="what-is-the-average-daily-activity-pattern" class="section level2">
-<h2>What is the average daily activity pattern?</h2>
+<div id="what-is-mean-total-number-of-steps-taken-per-day" class="section level3">
+<h3>What is mean total number of steps taken per day?</h3>
+<p>Use a function histo_mean_median() to generate a list containing the plot and the mean and median. It will later be called for both the raw and padded data.</p>
+<pre class="r"><code># require a histogram of the steps per day and mean and median
+# need this twice for different data so do it in a function
+
+histo_mean_median &lt;- function (df, title) {
+  # get the steps per day
+  df.perday &lt;- 
+    df %&gt;%
+    group_by( date)  %&gt;%
+    summarise(
+      steps_per_day = sum(steps, na.rm = TRUE)
+    )
+  #plot it as a histogram - force scales to be same for comparison
+  p&lt;-ggplot(df.perday, aes(x=steps_per_day)) +
+          geom_histogram(binwidth = 250) + 
+          labs( title=title ,
+                x = 'steps per day',
+                y = 'number of days')+
+          xlim(0,25000) +
+          scale_y_continuous(breaks=0:10)
+  # what where the mean and medium of step per day
+  mean_median &lt;- df.perday  %&gt;%
+    summarise(
+      mean_per_day   = mean(steps_per_day, na.rm = TRUE),
+      medium_per_day = median(steps_per_day, na.rm = TRUE)
+    )
+  #return the plot and the mean and median
+  ret &lt;- list(&quot;plot&quot; = p, &quot;mean_median&quot; = mean_median)
+  ret
+}</code></pre>
+<p>Generate the plots. Do I need to save these manually??</p>
+<pre class="r"><code>####################################################
+#Compare the raw and the padded data
+
+raw &lt;-histo_mean_median ( df.activity, 'Histogram of steps taken per day for the 2 months')
+pad &lt;-histo_mean_median ( df.activity.padded, 'Histogram  of padded data - see method - data essentially the same')
+
+# histograms on a panel
+grid.arrange(raw$plot, pad$plot, ncol=1, nrow=2)</code></pre>
+<p><img src="data:image/png;base64,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" /></p>
+<pre class="r"><code># the means and median
+raw$mean_median</code></pre>
+<pre><code>## Source: local data frame [1 x 2]
+## 
+##   mean_per_day medium_per_day
+## 1      9354.23          10395</code></pre>
+<pre class="r"><code>pad$mean_median</code></pre>
+<pre><code>## Source: local data frame [1 x 2]
+## 
+##   mean_per_day medium_per_day
+## 1     10762.05          10571</code></pre>
 </div>
-<div id="imputing-missing-values" class="section level2">
-<h2>Imputing missing values</h2>
+<div id="what-is-the-average-daily-activity-pattern" class="section level3">
+<h3>What is the average daily activity pattern?</h3>
 </div>
-<div id="are-there-differences-in-activity-patterns-between-weekdays-and-weekends" class="section level2">
-<h2>Are there differences in activity patterns between weekdays and weekends?</h2>
+<div id="are-there-differences-in-activity-patterns-between-weekdays-and-weekends" class="section level3">
+<h3>Are there differences in activity patterns between weekdays and weekends?</h3>
 </div>
 
 
