@@ -4,7 +4,7 @@ output:
   html_document:
     keep_md: true
 ---
-Information about my environment. Have a 'minor issue' that knitr in rstudio does not use the same library path.
+Information about my environment. Have a 'minor issue' that knitr in rstudio does not use the same library path and so will not run the Rmd script.
 
 Well i have a few hours before due date - it could be worse...
 

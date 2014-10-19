@@ -1,3 +1,8 @@
+To see the assignments knitr output follow the link;
+
+http://htmlpreview.github.io/?https://github.com/tonycaine/RR-Assign1/blob/master/PA1_template.html
+
+
 ## Introduction
 
 This is assignment #1 for the John Hopkins Reproducible Research course on https://class.coursera.org/repdata-007 . 
