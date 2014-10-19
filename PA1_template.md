@@ -37,7 +37,7 @@ Read in data using read.delim() which is same family as read.csv(). The data fra
 
 
 ```r
-dir<-'C:/_store/@stats/data-course/3.-reproducable-research-Oct2014/assignment_1'
+dir<-'C:/_store/@stats/data-course/3.-reproducable-research-Oct2014/Assignment_1_final'
 setwd(dir)
 
 file<- paste(dir,'/activity.csv', sep='')
@@ -346,6 +346,26 @@ grid.arrange(raw$plot, pad$plot, ncol=1, nrow=2)
 
 ![](./PA1_template_files/figure-html/unnamed-chunk-9-1.png) 
 
+```r
+#that plot's fine if looking at it direclty.
+#but need the plot to a file for the final markup on github
+```
+
+
+```r
+plotfilename<-'figures/histogram_daily_steps.png'
+fullplotfilename<-paste(dir,'/', plotfilename, sep='')
+png(fullplotfilename, height=600, width=800)
+grid.arrange(raw$plot, pad$plot, ncol=1, nrow=2)             
+dev.off()
+```
+
+```
+## pdf 
+##   2
+```
+plot 1:  - see the  [histogram_daily_steps image in figures folder](figures) 
+
 Mean per day increases when the NA's removed.
 
 ```r
@@ -392,16 +412,37 @@ interval_steps <-
 #plot the mean steps - use the hour as the x/base because to have treat as timeseries
 # if plot using the interval get gaps for times between end of hour and start of next. eg. 255 to 300
 
-ggplot(interval_steps , aes(x=hrs, y=mean_steps)) +
+p<-ggplot(interval_steps , aes(x=hrs, y=mean_steps)) +
   geom_line( colour='blue') + 
   labs( title='Mean Steps Vs Time for each 5 min Interval' ,
         x = 'time (as hour)',
         y = 'steps') + 
   theme(legend.position="none") +
   scale_x_continuous(breaks=0:24)
+p
 ```
 
 ![](./PA1_template_files/figure-html/unnamed-chunk-11-1.png) 
+
+
+
+```r
+plotfilename<-'figures/daily_intervals_mean_steps.png'
+fullplotfilename<-paste(dir,'/', plotfilename, sep='')
+png(fullplotfilename, height=600, width=800)
+p            
+dev.off()
+```
+
+```
+## pdf 
+##   2
+```
+plot 2:  - see the  [daily_intervals_mean_steps image in figures folder](figures) 
+
+
+
+
 The maximum mean number of step for an interval was about 206 steps at  8:35.
 
 ```r
@@ -468,4 +509,18 @@ grid.arrange(raw$plot, pad$plot, ncol=1, nrow=2)
 ```
 
 ![](./PA1_template_files/figure-html/unnamed-chunk-14-1.png) 
+
+```r
+plotfilename<-'figures/Comparing_weekday_weekend_padding.png'
+fullplotfilename<-paste(dir,'/', plotfilename, sep='')
+png(fullplotfilename, height=600, width=800)
+grid.arrange(raw$plot, pad$plot, ncol=1, nrow=2)             
+dev.off()
+```
+
+```
+## pdf 
+##   2
+```
+plot 3:  - see the  [Comparing_weekday_weekend_padding image in figures folder](figures) 
 
