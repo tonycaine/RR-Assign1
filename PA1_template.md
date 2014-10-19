@@ -340,14 +340,9 @@ Do I need to save these manually??
 raw <-histo_mean_median ( df.activity, 'Histogram of steps taken per day for the 2 months')
 pad <-histo_mean_median ( df.activity.padded, 'Histogram  of padded data - the NAs that were biasing the zeros - shifted')
 
-# histograms on a panel
-grid.arrange(raw$plot, pad$plot, ncol=1, nrow=2)
-```
-
-![](./PA1_template_files/figure-html/unnamed-chunk-9-1.png) 
-
-```r
-#that plot's fine if looking at it direclty.
+# histograms on a panel - in line
+#  grid.arrange(raw$plot, pad$plot, ncol=1, nrow=2)
+# that plot's fine if looking at it directly.
 #but need the plot to a file for the final markup on github
 ```
 
@@ -364,7 +359,11 @@ dev.off()
 ## pdf 
 ##   2
 ```
-plot 1:  - see the  [histogram_daily_steps image in figures folder](figures) 
+
+plot 1:  - histogram_daily_steps
+
+![histogram_daily_steps image in figures folder](figures/histogram_daily_steps.png) 
+
 
 Mean per day increases when the NA's removed.
 
@@ -419,10 +418,7 @@ p<-ggplot(interval_steps , aes(x=hrs, y=mean_steps)) +
         y = 'steps') + 
   theme(legend.position="none") +
   scale_x_continuous(breaks=0:24)
-p
 ```
-
-![](./PA1_template_files/figure-html/unnamed-chunk-11-1.png) 
 
 
 
@@ -438,9 +434,9 @@ dev.off()
 ## pdf 
 ##   2
 ```
-plot 2:  - see the  [daily_intervals_mean_steps image in figures folder](figures) 
+plot 2:  - daily_intervals_mean_steps 
 
-
+![daily_intervals_mean_steps image in figures folder](figures/daily_intervals_mean_steps.png) 
 
 
 The maximum mean number of step for an interval was about 206 steps at  8:35.
@@ -504,11 +500,9 @@ pad<- plot_weekday_weekend ( df.activity.padded, 'Padded data - essentally the s
 # Plot the weekday and the weekend interval averages on a panel
 # this arranegment allows comparison of the weekend/weekday and the effect of the padding
 
-#display results
-grid.arrange(raw$plot, pad$plot, ncol=1, nrow=2)
+#display results inline
+# grid.arrange(raw$plot, pad$plot, ncol=1, nrow=2)
 ```
-
-![](./PA1_template_files/figure-html/unnamed-chunk-14-1.png) 
 
 ```r
 plotfilename<-'figures/Comparing_weekday_weekend_padding.png'
@@ -522,5 +516,6 @@ dev.off()
 ## pdf 
 ##   2
 ```
-plot 3:  - see the  [Comparing_weekday_weekend_padding image in figures folder](figures) 
+plot 3:  - Comparing_weekday_weekend_padding
 
+![Comparing_weekday_weekend_padding image in figures folder](figures/Comparing_weekday_weekend_padding.png) 
